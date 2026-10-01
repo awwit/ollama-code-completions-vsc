@@ -6,6 +6,8 @@ export interface GenerateRequest {
     prompt: string;
     suffix?: string;
     stream: false;
+    think?: boolean;
+    raw?: boolean;
     options?: {
         num_predict?: number;
         temperature?: number;

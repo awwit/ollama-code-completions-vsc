@@ -33,9 +33,10 @@ export class OllamaClient {
 
         const body: GenerateRequest = {
             model: this.config.model,
-            prompt,
-            suffix: req.suffix,
+            prompt: `<|fim_prefix|>${prompt}<|fim_suffix|>${req.suffix}<|fim_middle|>`,
             stream: false,
+            think: false,
+            raw: true,
             options: {
                 num_predict: this.config.maxPredict,
                 temperature: 0.2,

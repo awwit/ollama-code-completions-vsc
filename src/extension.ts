@@ -7,14 +7,6 @@ import { CompletionCache } from './completion/cache';
 import { InlineProvider } from './completion/provider';
 import { StatusBar } from './statusBar';
 
-const SUPPORTED_LANGUAGES = [
-    'javascript', 'typescript', 'javascriptreact', 'typescriptreact',
-    'python', 'csharp', 'go', 'rust', 'java', 'cpp', 'c',
-    'php', 'ruby', 'swift', 'kotlin', 'scala', 'dart', 'lua',
-    'html', 'css', 'scss', 'json', 'jsonc', 'yaml', 'markdown',
-    'sql', 'shellscript', 'powershell', 'vue', 'svelte',
-];
-
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const config = new Config();
     const logger = Logger.init(config);
@@ -29,17 +21,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Set status bar to correct initial state.
     await applyInitialState(config, credentials, statusBar);
 
-    // Selectors for both file:// documents and unsaved buffers.
-    const selector: vscode.DocumentSelector = SUPPORTED_LANGUAGES.flatMap((language) => [
-        { language, scheme: 'file' },
-        { language, scheme: 'untitled' },
-    ]);
-
     context.subscriptions.push(
         config,
         logger,
         statusBar,
-        vscode.languages.registerInlineCompletionItemProvider(selector, provider),
+        vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, provider),
         config.onDidChange(async (e) => {
             if (e.modelChanged) {
                 cache.clear();

@@ -4,6 +4,7 @@ import { Logger } from './logger';
 import { Credentials } from './auth/credentials';
 import { OllamaClient } from './ollama/client';
 import { CompletionCache } from './completion/cache';
+import { AiIgnore } from './completion/aiIgnore';
 import { InlineProvider } from './completion/provider';
 import { StatusBar } from './statusBar';
 
@@ -14,18 +15,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const client = new OllamaClient(config, credentials);
     const cache = new CompletionCache(100);
     const statusBar = new StatusBar(config);
-    const provider = new InlineProvider(config, client, cache, statusBar);
+    const aiIgnore = new AiIgnore();
+    const provider = new InlineProvider(config, client, cache, aiIgnore, statusBar);
 
     logger.log('Attach', 'Ollama Code Completions activated');
 
     // Set status bar to correct initial state.
     await applyInitialState(config, credentials, statusBar);
 
+    const selector: vscode.DocumentSelector = [
+        { scheme: 'file' },
+        { scheme: 'untitled' },
+        { scheme: 'vscode-scm' }
+    ];
+
     context.subscriptions.push(
         config,
         logger,
+        aiIgnore,
         statusBar,
-        vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, provider),
+        vscode.languages.registerInlineCompletionItemProvider(selector, provider),
         config.onDidChange(async (e) => {
             if (e.modelChanged) {
                 cache.clear();

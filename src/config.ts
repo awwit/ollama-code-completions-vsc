@@ -108,7 +108,7 @@ export class Config implements vscode.Disposable {
             midLineMode: cfg.get<string>('midLineMode', 'smart') === 'never' ? 'never' : 'smart',
             multilineMode: normalizeMultilineMode(cfg.get<string>('multilineMode', 'auto')),
             maxCompletionLines: Math.max(1, cfg.get<number>('maxCompletionLines', 6)),
-            disabledLanguages: normalizeDisabledLanguages(cfg.get<string>('disabledLanguages', '')),
+            disabledLanguages: normalizeDisabledLanguages(cfg.get<string[]>('disabledLanguages', [])),
         };
     }
 
@@ -142,8 +142,8 @@ function normalizePromptMode(value: string): 'auto' | 'template' | 'raw' {
     }
 }
 
-function normalizeDisabledLanguages(disabledLanguages: string): Set<string> {
-    return disabledLanguages.split(',').reduce((acc, lang) => {
+function normalizeDisabledLanguages(disabledLanguages: string[]): Set<string> {
+    return disabledLanguages.reduce((acc, lang) => {
         lang = lang.trim().toLowerCase();
 
         if (lang) {

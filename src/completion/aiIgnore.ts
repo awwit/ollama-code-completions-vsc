@@ -2,6 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import ignore, { Ignore } from 'ignore';
 
+const DEFAULT_RULES = ['.env', '.env.*'];
+
 /** Workspace-root .aiignore rules, refreshed when the file changes. */
 export class AiIgnore implements vscode.Disposable {
     private readonly rules = new Map<string, Promise<Ignore | undefined>>();
@@ -56,12 +58,14 @@ export class AiIgnore implements vscode.Disposable {
     }
 
     private async load(root: vscode.Uri): Promise<Ignore | undefined> {
+        const matcher = ignore().add(DEFAULT_RULES);
+
         try {
             const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, '.aiignore'));
-            return ignore().add(new TextDecoder().decode(bytes));
+            return matcher.add(new TextDecoder().decode(bytes));
         } catch (error) {
             if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
-                return undefined;
+                return matcher;
             }
             // A failed read must not leak a file that might be excluded.
             throw error;

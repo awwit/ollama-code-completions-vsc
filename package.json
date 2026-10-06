@@ -133,9 +133,10 @@
 					"markdownDescription": "Hard cap on the number of lines in any completion. Even when multi-line is allowed, completions longer than this are truncated."
 				},
 				"ollamaCodeCompletions.disabledLanguages": {
-					"type": "string",
-					"default": "",
-					"markdownDescription": "A comma-separated list of [language identifiers](https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers) for which completions are disabled."
+					"type": "array",
+					"items": { "type": "string" },
+					"default": [],
+					"markdownDescription": "[Language identifiers](https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers) for which completions are disabled."
 				}
 			}
 		},

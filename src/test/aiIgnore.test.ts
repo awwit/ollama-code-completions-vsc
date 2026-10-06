@@ -100,6 +100,19 @@ function changed(kind: 'create' | 'change' | 'delete', root = '/project'): void 
 describe('.aiignore completion exclusion', () => {
     beforeEach(() => { files.clear(); reads = 0; failRead = false; });
 
+    it('excludes env files by default and lets workspace rules re-include them', async () => {
+        const guard = new AiIgnore();
+        const secret = doc('/project/src/.env');
+        assert.strictEqual(await guard.excludes(secret), true);
+        assert.strictEqual(await guard.excludes(doc('/project/.env.production')), true);
+        assert.strictEqual(await guard.excludes(doc('/project/src/index.ts')), false);
+        files.set('/project/.aiignore', '!.env\n');
+        changed('create');
+        assert.strictEqual(await guard.excludes(secret), false);
+        assert.strictEqual(await guard.excludes(doc('/project/.env.production')), true);
+        guard.dispose();
+    });
+
     it('applies gitignore globs, directory rules, root paths, comments and negations', async () => {
         files.set('/project/.aiignore', '# comment\n*.ts\n!allowed.ts\nbuild/\n/root.txt\n');
         const guard = new AiIgnore();

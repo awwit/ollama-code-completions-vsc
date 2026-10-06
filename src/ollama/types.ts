@@ -23,6 +23,10 @@ export interface GenerateResponse {
     // Other diagnostic fields are present but unused.
 }
 
+export interface ShowResponse {
+    capabilities?: string[];
+}
+
 export interface TagsResponse {
     models: Array<{
         name: string;
@@ -44,7 +48,7 @@ export interface CompletionResult {
 }
 
 export class OllamaError extends Error {
-    constructor(message: string, readonly httpStatus: number) {
+    constructor(message: string, readonly httpStatus: number, readonly responseBody?: string) {
         super(message);
         this.name = 'OllamaError';
     }

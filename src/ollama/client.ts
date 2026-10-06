@@ -12,7 +12,7 @@ import {
     TagsResponse,
 } from './types';
 
-type PromptFormat = 'template' | 'raw' | 'legacy';
+type PromptFormat = 'template' | 'raw';
 
 export class OllamaClient {
     private capabilityLookup?: { model: string; serverUrl: string; promise: Promise<PromptFormat> };
@@ -27,8 +27,10 @@ export class OllamaClient {
         if (token.isCancellationRequested) {
             return null;
         }
+
         const serverUrl = this.config.serverUrl;
         const cached = this.capabilityLookup;
+
         if (cached?.model === model && cached.serverUrl === serverUrl) {
             return waitForCancellation(cached.promise, token);
         }
@@ -38,7 +40,8 @@ export class OllamaClient {
             model,
             serverUrl,
             promise: this.post<ShowResponse>('/api/show', { model }).then(
-                (show): PromptFormat => !Array.isArray(show?.capabilities) ? 'legacy'
+                (show): PromptFormat => !Array.isArray(show?.capabilities)
+                    ? 'template'
                     : show.capabilities.includes('insert') ? 'template' : 'raw',
                 (err): PromptFormat => {
                     // A missing model also yields 404; do not cache it as an unsupported endpoint.
@@ -46,21 +49,26 @@ export class OllamaClient {
                         if (err.httpStatus === 404 && isMissingModel(err.responseBody)) {
                             throw err;
                         }
+
                         if (err.httpStatus === 404 || err.httpStatus === 405 || err.httpStatus === 501) {
-                            return 'legacy';
+                            return 'template';
                         }
                     }
+
                     throw err;
                 }
             ),
         };
+
         this.capabilityLookup = lookup;
+
         // Clear failed lookups even if every caller has stopped waiting for them.
         void lookup.promise.catch(() => {
             if (this.capabilityLookup === lookup) {
                 this.capabilityLookup = undefined;
             }
         });
+
         return waitForCancellation(lookup.promise, token);
     }
 
@@ -77,6 +85,7 @@ export class OllamaClient {
         const setting = this.config.promptMode;
         const serverUrl = this.config.serverUrl;
         const capabilityGeneration = this.capabilityGeneration;
+
         let format: PromptFormat | null;
         try {
             format = setting === 'auto' ? await this.resolvePromptFormat(model, token) : setting;
@@ -87,6 +96,7 @@ export class OllamaClient {
             log.error('show failed', err);
             throw err;
         }
+
         if (format === null || token.isCancellationRequested || model !== this.config.model ||
             setting !== this.config.promptMode || serverUrl !== this.config.serverUrl ||
             capabilityGeneration !== this.capabilityGeneration) {
@@ -105,8 +115,8 @@ export class OllamaClient {
 
         const body: GenerateRequest = {
             model,
-            prompt: format === 'template' ? prompt || '\n' : format === 'legacy'
-                ? `<|fim_prefix|>${prompt}<|fim_suffix|>${req.suffix}<|fim_middle|>`
+            prompt: format === 'template'
+                ? prompt || '\n'
                 : this.config.fimTemplate.replace(/\{prefix\}|\{suffix\}/g, (slot) =>
                     slot === '{prefix}' ? prompt : req.suffix
                 ),
@@ -182,9 +192,12 @@ export class OllamaClient {
 
         try {
             const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
                 Accept: 'application/json',
             };
+
+            if (method !== 'GET' && body !== undefined) {
+                headers['Content-Type'] = 'application/json';
+            }
 
             if (this.config.useAuthentication) {
                 const creds = await this.credentials.get();

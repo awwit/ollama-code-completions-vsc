@@ -59,7 +59,7 @@ describe('completion requests across prompt changes', () => {
         globalThis.fetch = originalFetch;
     });
 
-    it('uses the previous request format if show is unsupported, and caches that decision', async () => {
+    it('uses the template flow if show is unsupported, and caches that decision', async () => {
         const config = {
             serverUrl: 'http://example.invalid', model: 'qwen2.5-coder:1.5b', promptMode: 'auto',
             timeoutSeconds: 1, maxPredict: 20, useAuthentication: false,
@@ -81,66 +81,11 @@ describe('completion requests across prompt changes', () => {
         assert.strictEqual((await client.complete(request, token))?.text, 'suggestion');
         assert.strictEqual(showCalls, 1);
         assert.strictEqual(generated.length, 2);
-        assert.strictEqual(generated[0].prompt, '<|fim_prefix|>before<|fim_suffix|>after<|fim_middle|>');
-        assert.strictEqual(generated[0].suffix, undefined);
-        assert.strictEqual(generated[0].raw, true);
+        assert.strictEqual(generated[0].prompt, 'before');
+        assert.strictEqual(generated[0].suffix, 'after');
+        assert.strictEqual(generated[0].raw, undefined);
         assert.strictEqual(generated[0].think, false);
         assert.deepStrictEqual(generated[1], generated[0]);
-    });
-
-    it('rechecks a missing model after it is installed instead of caching legacy mode', async () => {
-        const config = {
-            serverUrl: 'http://example.invalid', model: 'starcoder2', promptMode: 'auto',
-            timeoutSeconds: 1, maxPredict: 20, useAuthentication: false,
-        } as Config;
-        const client = new OllamaClient(config, {} as ConstructorParameters<typeof OllamaClient>[1]);
-        let installed = false;
-        let showCalls = 0;
-        const generated: Array<{ raw?: boolean; suffix?: string }> = [];
-        const missingErrors = ["model 'starcoder2' not found", 'model "starcoder2" not found, try pulling it first'];
-        globalThis.fetch = async (url, init) => {
-            if (String(url).endsWith('/api/show')) {
-                showCalls++;
-                return installed
-                    ? Response.json({ capabilities: ['completion', 'insert'] })
-                    : Response.json({ error: missingErrors[showCalls - 1] }, { status: 404 });
-            }
-            generated.push(JSON.parse(String(init?.body)));
-            return Response.json({ response: 'suggestion' });
-        };
-
-        const request = { prefix: 'before', suffix: 'after' };
-        for (let attempt = 0; attempt < missingErrors.length; attempt++) {
-            await assert.rejects(client.complete(request, token), /HTTP 404.*not found/);
-        }
-        assert.strictEqual(generated.length, 0);
-        installed = true;
-        assert.strictEqual((await client.complete(request, token))?.text, 'suggestion');
-        assert.strictEqual(showCalls, 3);
-        assert.strictEqual(generated[0].raw, undefined);
-        assert.strictEqual(generated[0].suffix, 'after');
-    });
-
-    it('uses the legacy raw prompt when show omits capabilities', async () => {
-        const config = {
-            serverUrl: 'http://example.invalid', model: 'qwen2.5-coder:1.5b', promptMode: 'auto',
-            timeoutSeconds: 1, maxPredict: 20, useAuthentication: false,
-        } as Config;
-        const client = new OllamaClient(config, {} as ConstructorParameters<typeof OllamaClient>[1]);
-        let generated!: { prompt: string; suffix?: string; raw?: boolean; think?: boolean };
-        globalThis.fetch = async (url, init) => {
-            if (String(url).endsWith('/api/show')) {
-                return Response.json({});
-            }
-            generated = JSON.parse(String(init?.body));
-            return Response.json({ response: 'suggestion' });
-        };
-
-        assert.strictEqual((await client.complete({ prefix: 'before', suffix: 'after' }, token))?.text, 'suggestion');
-        assert.strictEqual(generated.prompt, '<|fim_prefix|>before<|fim_suffix|>after<|fim_middle|>');
-        assert.strictEqual(generated.suffix, undefined);
-        assert.strictEqual(generated.raw, true);
-        assert.strictEqual(generated.think, false);
     });
 
     it('does not mask show authorization failures by falling back', async () => {

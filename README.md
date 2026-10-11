@@ -35,7 +35,7 @@ Sends the code around your cursor to an Ollama model (e.g. `qwen2.5-coder`, `cod
 2. (Optional) Open Settings and set `ollamaCodeCompletions.serverUrl` if your Ollama instance is not at `localhost:11434`.
 3. Run **Ollama Code Completions: Pick Model** from the command palette and choose a model.
 4. Run **Ollama Code Completions: Test Connection** to verify everything is wired up.
-5. Open a file in a supported language and start typing.
+5. Open any file and start typing.
 
 ## Settings
 

@@ -68,7 +68,7 @@ Choose `"template"` to use your model's built-in formatting, or `"raw"` to use a
 
 - Qwen Coder: `<|fim_prefix|>{prefix}<|fim_suffix|>{suffix}<|fim_middle|>`
 - Code Llama: `<PRE>{prefix}<SUF>{suffix}<MID>`
-- DeepSeek Coder V2: `<|fim_begin|>{prefix}<|fim_hole|>{suffix}<|fim_end|>`
+- DeepSeek Coder V2: `<｜fim▁begin｜>{prefix}<｜fim▁hole｜>{suffix}<｜fim▁end｜>`
 
 ## Commands
 
